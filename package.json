@@ -1,11 +1,11 @@
 {
   "dependencies": {
+    "@huggingface/inference": "^4.6.1",
     "axios": "^1.11.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
-    "helmet": "^8.1.0",
-    "morgan": "^1.10.1"
+    "ml-distance": "^4.0.1"
   },
   "name": "project_ai_agent",
   "version": "1.0.0",
@@ -29,9 +29,8 @@
   "scripts": {
     "dev": "nodemon src/server.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/server.js",
     "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts"
   },
   "keywords": [],
