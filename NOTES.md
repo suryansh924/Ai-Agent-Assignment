@@ -2,56 +2,142 @@
 
 ## What was AI-generated vs Hand-written
 
-### AI-Generated Code:
-- Initial project structure
-- TypeScript configurations
-- Basic Express server setup
-- Mock Weather and Math regex patterns and plugin
-- RAG Service   
-- RAG & LLM Fallbacks
+### AI-Generated Components:
+- **Initial project structure** - Copilot suggested Express setup and TypeScript configurations
+- **Basic embedding generation logic** - Used Copilot for OpenAI API integration patterns
+- **Cosine similarity calculation** - Leveraged `ml-distance` library suggestions
+- **Basic plugin detection patterns** - Regex patterns for weather/math intent detection
+- **Server routing boilerplate** - Express middleware and error handling structures
 
-### Hand-written Code:
-- LLM Service 
-- Session memory
-- message endpoints
-- Prompt engineering
+### Hand-Written/Custom Logic:
+- **Semantic chunking strategy** - Custom algorithm for preserving context with headers
+- **RAG retrieval scoring** - Combined semantic + keyword matching with custom weights
+- **Plugin execution flow** - Custom confidence thresholding and routing logic
+- **Memory management** - Session-based conversation storage and retrieval
+- **Prompt engineering** - All system prompts designed from scratch
+- **Response formatting** - Clean output without meta-commentary
 
 ## Bugs Faced and Solutions
 
-### Setup Issues:
-- None yet
+### 1. Context Irrelevance Issue
+**Problem**: RAG system was retrieving irrelevant chunks (e.g., TypeScript content for weather queries)
+**Solution**: 
+- Increased similarity threshold from 0.3 to 0.4+
+- Implemented better filtering to return empty context when no relevant chunks found
+- Added keyword matching boost for better relevance scoring
 
-### Development Issues:
-- Hugging Face Inference API issues for JS
-- Plugins character detection issues, regex patterns
-- LLM response quality issues, formatting, token limit
-- Issues with Specific context related responses => Improved with contecxtual semantics chunking
+### 2. Response Quality Problems
+**Problem**: Responses included verbose meta-commentary about system reasoning
+**Solution**:
+- Redesigned prompt structure with clear sections and factual instructions
+- Removed explanatory text about plugin usage and context filtering
+- Implemented different prompt templates based on context availability
 
-## Architecture Decisions
+### 3. Location Parsing in Weather Plugin
+**Problem**: User input "how hot is it in thailand these days" was passing "thailand these days" as location
+**Solution**:
+- Enhanced regex patterns to extract clean location names
+- Added temporal keyword filtering ("today", "tomorrow", "these days", etc.)
+- Improved location normalization logic
 
-### Vector Database Choice:
-- **Chosen**: Custom vector search with ml-distance
-- **Reason**: Simplicity and full control over TypeScript implementation
+### 4. Memory Duplication Bug
+**Problem**: Conversation history was being duplicated in memory storage
+**Solution**: 
+- Fixed session management to properly track unique conversation turns
+- Implemented proper memory cleanup and deduplication
 
-### Memory Strategy:
-- **Chosen**: In-memory session storage (for MVP)
-- **Future**: Could migrate to Redis or PostgreSQL
+### 5. Chunking Specificity Issues
+**Problem**: Paragraph-based chunking was losing semantic coherence
+**Solution**:
+- Implemented header-aware chunking that preserves topic boundaries
+- Added context preservation (headers included in chunks)
+- Set better size limits (50-800 chars) with semantic boundaries
 
-### Plugin Architecture:
-- **Pattern**: Simple function-based plugins with keyword matching
-- **Future**: Could expand to more sophisticated intent detection
+## Agent Architecture & Flow
 
-### LLM & Embedding Service:
-- **Chosen**: Hugging Face Inference API => Mistral-7B-Instruct-v0.3 | MiniLM-L6-v2
-- **Reason**: Free tier, good performance, and easy to use
+### RAG Workflow:
+```
+1. User Query → Embedding Generation
+2. Vector Search (cosine similarity + keyword matching)
+3. Threshold Filtering (score > 0.4)
+4. Top-3 Chunk Selection
+5. Context Injection into Prompt
+```
 
-## Agent Flow
+### Plugin Routing:
+```
+1. Intent Detection (regex patterns + confidence scoring)
+2. Confidence Thresholding (> 0.3)
+3. Plugin Execution (weather/math)
+4. Result Integration into LLM Prompt
+5. Response Generation
+```
 
-1. **Message Reception**: POST /agent/message
-2. **Memory Retrieval**: Get last 2 messages from session
-3. **RAG Context**: Embed query → retrieve top 3 chunks
-4. **Plugin Detection**: Check for plugin keywords/intents
-5. **Plugin Execution**: If detected, execute relevant plugins
-6. **Prompt Assembly**: Combine system prompt + memory + context + plugin results
-7. **LLM Call**: Send to LLM with assembled prompt
-8. **Response**: Return agent response and update session memory
+### Memory Integration:
+```
+1. Session-based Storage (in-memory Map)
+2. Last 5 messages per session
+3. Memory injection into system prompt
+4. Conversation context preservation
+```
+
+### System Prompt Structure:
+```markdown
+You are a helpful assistant with access to:
+- conversation memory
+- plugin results (weather, math)  
+- relevant documents
+
+Respond only with factual information.
+Use plugin results if available.
+
+---
+Conversation History: [...]
+---
+Plugin Results: [...]
+---
+Relevant Context: [...]  
+---
+User Message: [...]
+```
+
+## Performance Optimizations
+
+### Embedding Cache:
+- Implemented persistent JSON cache for embeddings
+- Reduces redundant API calls and improves response time
+- Cache invalidation based on content hash
+
+### Chunking Strategy:
+- Header-aware semantic chunking preserves context
+- Size optimization (50-800 chars) balances specificity vs performance
+- Metadata preservation for better retrieval
+
+### Memory Management:
+- Limited to 5 messages per session to control prompt size
+- Efficient in-memory storage with session cleanup
+
+## Technical Decisions
+
+### Vector Search Implementation:
+- Chose `ml-distance` with cosine similarity over external vector DBs
+- Custom scoring: `semantic_score + keyword_boost * 0.1 + technical_terms * 0.15`
+- In-memory vector storage for simplicity and speed
+
+### Plugin System Design:
+- Confidence-based routing prevents false positives
+- Extensible architecture for adding new plugins
+- Clear separation between intent detection and execution
+
+### Chunking Approach:
+- Rejected simple paragraph splitting for semantic chunking
+- Header preservation maintains document structure
+- Context-aware chunking improves retrieval relevance
+
+## Areas for Improvement
+
+1. **Vector Storage**: Could migrate to persistent vector DB for larger datasets
+2. **Plugin Expansion**: Add more sophisticated plugins (calculator, search, etc.)
+3. **Caching**: Implement Redis for distributed memory management
+4. **Monitoring**: Add logging and performance metrics
+5. **Error Handling**: More robust error recovery and fallback strategies
