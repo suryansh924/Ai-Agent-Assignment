@@ -1,4 +1,5 @@
 # AI Agent with RAG + Plugin System
+**Live API**: https://ai-agent-assignment.onrender.com
 
 A TypeScript-based AI agent server featuring Retrieval-Augmented Generation (RAG), plugin execution, and session-based memory management.
 
